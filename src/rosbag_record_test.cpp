@@ -53,17 +53,25 @@ int main(int argc, char** argv)
   // Set the options for this recording
   rosbag::RecorderOptions opts;
   opts.topics.push_back("/robot/left_velocity_trajectory_controller/state");
-  opts.prefix = "file1"; // name of file to output to
+  opts.append_date = false;
 
-  // Start
-  tester.startRecording(opts);
+  int counter = 0;
+  while(ros::ok() && counter < 5)
+  {
+    ROS_INFO_STREAM_NAMED("rosbag_record_test","Recording test " << counter);
 
-  ROS_INFO_STREAM_NAMED("temp","main recording for 5 sec");
-  ros::Duration(3.0).sleep();
+    opts.prefix = "file" + boost::to_string(counter); // name of file to output to
 
-  // Stop
-  tester.stopRecording();
-  
+    // Start
+    tester.startRecording(opts);
+
+    ros::Duration(2.0).sleep();
+
+    // Stop
+    tester.stopRecording();
+    counter ++;
+  }
+
   ROS_INFO_STREAM_NAMED("rosbag_record_test","Shutting down.");
 
   return 0;
