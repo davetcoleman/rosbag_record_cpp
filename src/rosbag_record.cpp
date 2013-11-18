@@ -33,7 +33,7 @@
  *********************************************************************/
 
 /* Author: Dave Coleman
-   Desc:   Records baxter data to Bag for Matlab/etc analysis
+   Desc:   Allows ROS applications to programmatically use rosbag as a thin wrapper without dealing with topic subscriptions
 */
 
 #include <rosbag_record_cpp/rosbag_record.h>
@@ -56,7 +56,7 @@ void ROSBagRecord::startRecording(rosbag::RecorderOptions opts)
 {
   stop_recording_ = false;
 
-  ROS_INFO_STREAM_NAMED("baxter_to_bag","Starting rosbag record");
+  ROS_INFO_STREAM_NAMED("rosbag_record","Starting rosbag record");
   worker_thread_ = boost::thread(&ROSBagRecord::thread, this, opts);
 }
 
@@ -69,7 +69,7 @@ void ROSBagRecord::thread(rosbag::RecorderOptions opts)
 
 void ROSBagRecord::stopRecording()
 {
-  ROS_INFO_STREAM_NAMED("baxter_to_bag","Stopping rosbag record");
+  ROS_INFO_STREAM_NAMED("rosbag_record","Stopping rosbag record");
   stop_recording_ = true;
   worker_thread_.join();
 }

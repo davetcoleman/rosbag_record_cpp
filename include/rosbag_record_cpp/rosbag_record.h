@@ -33,7 +33,7 @@
  *********************************************************************/
 
 /* Author: Dave Coleman
-   Desc:   Records baxter data to Bag for Matlab/etc analysis
+   Desc:   Allows ROS applications to programmatically use rosbag as a thin wrapper without dealing with topic subscriptions
 */
 
 #ifndef ROSBAG_RECORD_CPP__ROSBAG_RECORD_

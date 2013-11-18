@@ -33,16 +33,16 @@
  *********************************************************************/
 
 /* Author: Dave Coleman
-   Desc:   Testing main executable for baxter_to_bag functionality
+   Desc:   Testing main executable for rosbag_record functionality
 */
 
 #include <rosbag_record_cpp/rosbag_record.h>
 
 int main(int argc, char** argv)
 {
-  ROS_INFO_STREAM_NAMED("baxter_to_bag_test","baxter_to_bag_test");
+  ROS_INFO_STREAM_NAMED("rosbag_record_test","rosbag_record_test");
 
-  ros::init(argc, argv, "baxter_to_bag_test");
+  ros::init(argc, argv, "rosbag_record_test");
 
   // Allow the action server to recieve and send ros messages
   //ros::AsyncSpinner spinner(4);
@@ -64,7 +64,7 @@ int main(int argc, char** argv)
   // Stop
   tester.stopRecording();
   
-  ROS_INFO_STREAM_NAMED("baxter_to_bag_test","Shutting down.");
+  ROS_INFO_STREAM_NAMED("rosbag_record_test","Shutting down.");
 
   return 0;
 }
