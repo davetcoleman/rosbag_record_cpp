@@ -51,7 +51,7 @@ int main(int argc, char** argv)
   rosbag_record_cpp::ROSBagRecord tester;
 
   // Set the options for this recording
-  rosbag::RecorderOptions opts;
+  rosbag_record_cpp::RecorderOptions opts;
   opts.topics.push_back("/robot/left_velocity_trajectory_controller/state");
   opts.append_date = false;
 

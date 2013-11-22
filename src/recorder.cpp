@@ -78,7 +78,7 @@ using std::vector;
 using boost::shared_ptr;
 using ros::Time;
 
-namespace rosbag {
+namespace rosbag_record_cpp {
 
 // OutgoingMessage
 
@@ -105,7 +105,7 @@ RecorderOptions::RecorderOptions() :
     append_date(true),
     snapshot(false),
     verbose(false),
-    compression(compression::Uncompressed),
+    compression(rosbag::compression::Uncompressed),
     prefix(""),
     name(""),
     exclude_regex(),
@@ -121,7 +121,7 @@ RecorderOptions::RecorderOptions() :
 
 // Recorder
 
-Recorder::Recorder(RecorderOptions const& options) :
+Recorder2::Recorder2(RecorderOptions const& options) :
     options_(options),
     num_subscribers_(0),
     exit_code_(0),
@@ -131,7 +131,7 @@ Recorder::Recorder(RecorderOptions const& options) :
 {
 }
 
-int Recorder::run(bool* stop_recording) {
+int Recorder2::run(bool* stop_recording) {
 
     static bool false_bool = 0; // this should be used as a constant
     // Check if the user passed in a pointer for the stop flag
@@ -194,19 +194,21 @@ int Recorder::run(bool* stop_recording) {
     boost::thread record_thread;
     if (options_.snapshot)
     {
-        record_thread = boost::thread(boost::bind(&Recorder::doRecordSnapshotter, this));
+        record_thread = boost::thread(boost::bind(&Recorder2::doRecordSnapshotter, this));
 
         // Subscribe to the snapshot trigger
-        trigger_sub = nh.subscribe<std_msgs::Empty>("snapshot_trigger", 100, boost::bind(&Recorder::snapshotTrigger, this, _1));
+        trigger_sub = nh.subscribe<std_msgs::Empty>("snapshot_trigger", 100, boost::bind(&Recorder2::snapshotTrigger, this, _1));
     }
     else
-        record_thread = boost::thread(boost::bind(&Recorder::doRecord, this));
+    {
+        record_thread = boost::thread(boost::bind(&Recorder2::doRecord, this));
+    }
 
 
 
     ros::Timer check_master_timer;
     if (options_.record_all || options_.regex || (options_.node != std::string("")))
-        check_master_timer = nh.createTimer(ros::Duration(1.0), boost::bind(&Recorder::doCheckMaster, this, _1, boost::ref(nh)));
+        check_master_timer = nh.createTimer(ros::Duration(1.0), boost::bind(&Recorder2::doCheckMaster, this, _1, boost::ref(nh)));
 
     // If this class is being used within another application, it may need to have the ability to stop recording
     if (stop_recording) // a stop flag was passed into the run() function so we need to allow the recording to end
@@ -237,24 +239,24 @@ int Recorder::run(bool* stop_recording) {
     return exit_code_;
 }
 
-shared_ptr<ros::Subscriber> Recorder::subscribe(string const& topic) {
+shared_ptr<ros::Subscriber> Recorder2::subscribe(string const& topic) {
 	ROS_INFO("Subscribing to %s", topic.c_str());
 
     ros::NodeHandle nh;
     shared_ptr<int> count(new int(options_.limit));
     shared_ptr<ros::Subscriber> sub(new ros::Subscriber);
-    *sub = nh.subscribe<topic_tools::ShapeShifter>(topic, 100, boost::bind(&Recorder::doQueue, this, _1, topic, sub, count));
+    *sub = nh.subscribe<topic_tools::ShapeShifter>(topic, 100, boost::bind(&Recorder2::doQueue, this, _1, topic, sub, count));
     currently_recording_.insert(topic);
     num_subscribers_++;
 
     return sub;
 }
 
-bool Recorder::isSubscribed(string const& topic) const {
+bool Recorder2::isSubscribed(string const& topic) const {
     return currently_recording_.find(topic) != currently_recording_.end();
 }
 
-bool Recorder::shouldSubscribeToTopic(std::string const& topic, bool from_node) {
+bool Recorder2::shouldSubscribeToTopic(std::string const& topic, bool from_node) {
     // ignore already known topics
     if (isSubscribed(topic)) {
         return false;
@@ -288,7 +290,7 @@ bool Recorder::shouldSubscribeToTopic(std::string const& topic, bool from_node) 
 }
 
 template<class T>
-std::string Recorder::timeToStr(T ros_t)
+std::string Recorder2::timeToStr(T ros_t)
 {
     std::stringstream msg;
     const boost::posix_time::ptime now=
@@ -301,8 +303,8 @@ std::string Recorder::timeToStr(T ros_t)
 }
 
 //! Callback to be invoked to save messages into a queue
-void Recorder::doQueue(ros::MessageEvent<topic_tools::ShapeShifter const> msg_event, string const& topic, shared_ptr<ros::Subscriber> subscriber, shared_ptr<int> count) {
-    //void Recorder::doQueue(topic_tools::ShapeShifter::ConstPtr msg, string const& topic, shared_ptr<ros::Subscriber> subscriber, shared_ptr<int> count) {
+void Recorder2::doQueue(ros::MessageEvent<topic_tools::ShapeShifter const> msg_event, string const& topic, shared_ptr<ros::Subscriber> subscriber, shared_ptr<int> count) {
+    //void Recorder2::doQueue(topic_tools::ShapeShifter::ConstPtr msg, string const& topic, shared_ptr<ros::Subscriber> subscriber, shared_ptr<int> count) {
     Time rectime = Time::now();
     
     if (options_.verbose)
@@ -349,7 +351,7 @@ void Recorder::doQueue(ros::MessageEvent<topic_tools::ShapeShifter const> msg_ev
     }
 }
 
-void Recorder::updateFilenames() {
+void Recorder2::updateFilenames() {
     vector<string> parts;
 
     std::string prefix = options_.prefix;
@@ -377,7 +379,7 @@ void Recorder::updateFilenames() {
 }
 
 //! Callback to be invoked to actually do the recording
-void Recorder::snapshotTrigger(std_msgs::Empty::ConstPtr trigger) {
+void Recorder2::snapshotTrigger(std_msgs::Empty::ConstPtr trigger) {
     updateFilenames();
     
     ROS_INFO("Triggered snapshot recording with name %s.", target_filename_.c_str());
@@ -392,13 +394,13 @@ void Recorder::snapshotTrigger(std_msgs::Empty::ConstPtr trigger) {
     queue_condition_.notify_all();
 }
 
-void Recorder::startWriting() {
+void Recorder2::startWriting() {
     bag_.setCompression(options_.compression);
     bag_.setChunkThreshold(options_.chunk_size);
 
     updateFilenames();
     try {
-        bag_.open(write_filename_, bagmode::Write);
+        bag_.open(write_filename_, rosbag::bagmode::Write);
     }
     catch (rosbag::BagException e) {
         ROS_ERROR("Error writing: %s", e.what());
@@ -408,13 +410,13 @@ void Recorder::startWriting() {
     ROS_INFO("Recording to %s.", target_filename_.c_str());
 }
 
-void Recorder::stopWriting() {
+void Recorder2::stopWriting() {
     ROS_INFO("Closing %s.", target_filename_.c_str());
     bag_.close();
     rename(write_filename_.c_str(), target_filename_.c_str());
 }
 
-bool Recorder::checkSize()
+bool Recorder2::checkSize()
 {
     if (options_.max_size > 0)
     {
@@ -434,7 +436,7 @@ bool Recorder::checkSize()
     return false;
 }
 
-bool Recorder::checkDuration(const ros::Time& t)
+bool Recorder2::checkDuration(const ros::Time& t)
 {
     if (options_.max_duration > ros::Duration(0))
     {
@@ -460,7 +462,7 @@ bool Recorder::checkDuration(const ros::Time& t)
 
 
 //! Thread that actually does writing to file.
-void Recorder::doRecord() {
+void Recorder2::doRecord() {
     // Open bag file for writing
     startWriting();
 
@@ -483,6 +485,7 @@ void Recorder::doRecord() {
                 finished = true;
                 break;
             }
+
             boost::xtime xt;
 #if BOOST_VERSION >= 105000
             boost::xtime_get(&xt, boost::TIME_UTC_);
@@ -514,12 +517,14 @@ void Recorder::doRecord() {
 
         if (scheduledCheckDisk() && checkLogging())
             bag_.write(out.topic, out.time, *out.msg, out.connection_header);
+
     }
 
     stopWriting();
+
 }
 
-void Recorder::doRecordSnapshotter() {
+void Recorder2::doRecordSnapshotter() {
     ros::NodeHandle nh;
   
     while ( !*stop_recording_ && (nh.ok() || !queue_queue_.empty()) ) {
@@ -539,7 +544,7 @@ void Recorder::doRecordSnapshotter() {
         string write_filename  = target_filename + string(".active");
         
         try {
-            bag_.open(write_filename, bagmode::Write);
+            bag_.open(write_filename, rosbag::bagmode::Write);
         }
         catch (rosbag::BagException ex) {
             ROS_ERROR("Error writing: %s", ex.what());
@@ -557,7 +562,7 @@ void Recorder::doRecordSnapshotter() {
     }
 }
 
-void Recorder::doCheckMaster(ros::TimerEvent const& e, ros::NodeHandle& node_handle) {
+void Recorder2::doCheckMaster(ros::TimerEvent const& e, ros::NodeHandle& node_handle) {
     ros::master::V_TopicInfo topics;
     if (ros::master::getTopics(topics)) {
 		foreach(ros::master::TopicInfo const& t, topics) {
@@ -606,7 +611,7 @@ void Recorder::doCheckMaster(ros::TimerEvent const& e, ros::NodeHandle& node_han
     }
 }
 
-void Recorder::doTrigger() {
+void Recorder2::doTrigger() {
     ros::NodeHandle nh;
     ros::Publisher pub = nh.advertise<std_msgs::Empty>("snapshot_trigger", 1, true);
     pub.publish(std_msgs::Empty());
@@ -615,7 +620,7 @@ void Recorder::doTrigger() {
     ros::spin();
 }
 
-bool Recorder::scheduledCheckDisk() {
+bool Recorder2::scheduledCheckDisk() {
     boost::mutex::scoped_lock lock(check_disk_mutex_);
 
     if (ros::WallTime::now() < check_disk_next_)
@@ -625,7 +630,7 @@ bool Recorder::scheduledCheckDisk() {
     return checkDisk();
 }
 
-bool Recorder::checkDisk() {
+bool Recorder2::checkDisk() {
 #if BOOST_FILESYSTEM_VERSION < 3
     struct statvfs fiData;
     if ((statvfs(bag_.getFileName().c_str(), &fiData)) < 0)
@@ -682,7 +687,7 @@ bool Recorder::checkDisk() {
     return true;
 }
 
-bool Recorder::checkLogging() {
+bool Recorder2::checkLogging() {
     if (writing_enabled_)
         return true;
 

@@ -43,6 +43,7 @@
 #include <ros/ros.h>
 #include <rosbag_record_cpp/recorder.h>
 #include <rosbag/exceptions.h>
+#include <rosbag/recorder.h>
 
 // Boost
 #include <boost/program_options.hpp>
@@ -77,9 +78,9 @@ public:
   ROSBagRecord();
   ~ROSBagRecord();
 
-  void startRecording(rosbag::RecorderOptions opts);
+  void startRecording(rosbag_record_cpp::RecorderOptions opts);
 
-  void thread(rosbag::RecorderOptions opts);
+  void thread(rosbag_record_cpp::RecorderOptions opts);
 
   void stopRecording();
 

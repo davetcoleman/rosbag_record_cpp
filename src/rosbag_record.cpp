@@ -52,7 +52,7 @@ ROSBagRecord::~ROSBagRecord()
 }
 
 // Start the data collection
-void ROSBagRecord::startRecording(rosbag::RecorderOptions opts)
+void ROSBagRecord::startRecording(rosbag_record_cpp::RecorderOptions opts)
 {
   stop_recording_ = false;
 
@@ -60,10 +60,10 @@ void ROSBagRecord::startRecording(rosbag::RecorderOptions opts)
   worker_thread_ = boost::thread(&ROSBagRecord::thread, this, opts);
 }
 
-void ROSBagRecord::thread(rosbag::RecorderOptions opts)
+void ROSBagRecord::thread(rosbag_record_cpp::RecorderOptions opts)
 {
   // Run the recorder
-  rosbag::Recorder recorder(opts);
+  rosbag_record_cpp::Recorder2 recorder(opts);
   recorder.run(&stop_recording_);
 }
 
@@ -75,4 +75,3 @@ void ROSBagRecord::stopRecording()
 }
 
 } // namespace
-
