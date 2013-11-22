@@ -40,7 +40,10 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-add_library(rosbag_record src/rosbag_record.cpp)
+add_library(rosbag_record 
+  src/rosbag_record.cpp
+  src/recorder.cpp
+)
 target_link_libraries(rosbag_record ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 add_dependencies(rosbag_record ${catkin_EXPORTED_TARGETS}) # don't build until necessary msgs are finished
 

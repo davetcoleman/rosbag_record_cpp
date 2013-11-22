@@ -41,7 +41,7 @@
 
 // ROS
 #include <ros/ros.h>
-#include <rosbag/recorder.h>
+#include <rosbag_record_cpp/recorder.h>
 #include <rosbag/exceptions.h>
 
 // Boost
